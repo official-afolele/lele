@@ -1,6 +1,14 @@
 import { WeddingConfig } from '../types';
 
 export const weddingData: WeddingConfig = {
+  export const initialWishes: WishEntry[] = [];
+
+export const initialGuests: GuestItem[] = [
+  { id: '1', name: 'Bapak Andi & Keluarga', category: 'VIP', note: 'Kerabat dekat' },
+  { id: '2', name: 'Rahmat Hidayat', category: 'Teman', note: 'Sahabat kampus' },
+  { id: '3', name: 'Keluarga Besar Hatta', category: 'Keluarga', note: 'Keluarga mempelai wanita' },
+  { id: '4', name: 'Rekan Kerja Dinas', category: 'Kantor', note: 'Teman kantor' },
+];
   "groom": {
     "name": "Jaka",
     "fullName": "Jaka, S.Kom",
@@ -109,4 +117,5 @@ export const weddingData: WeddingConfig = {
   "audioUrl": "https://wedding-invitations-chi.vercel.app/audio/cinta_terakhir_cover1.mp3",
   "googleScriptUrl": "https://script.google.com/macros/s/AKfycby6h1lOSpTyczUj5Bsyu3n0W3AnlZuME1Cn4V2WFfpNQeGj6v_3poNiZScPbButlpVf/exec",
   "customDomain": "https://ayonikah.web.id"
+  
 };
