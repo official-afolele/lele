@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { WishEntry } from '../types';
-import { initialWishes } from '../data/weddingData';
 import { 
   Heart, 
   Send, 
