@@ -29,7 +29,7 @@ export const initialGuests: GuestItem[] = [
     "mother": "Ibu Sumartik",
     "instagram": "@harinurdian"
   },
- "couplePhoto": "/couple-cover.jpg",
+  "couplePhoto": "/couple-cover.jpg",
   "gallery": [
     {
       "id": "gal_1",
