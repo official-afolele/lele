@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { WeddingConfig, GalleryPhoto } from '../types';
 import { normalizeImageUrl } from '../utils/imageUrl';
-import { Sparkles, X, ChevronLeft, ChevronRight, Eye, MoveHorizontal } from 'lucide-react';
-import { DEFAULT_COVER_PHOTO_BASE64 } from './coverPhotoBase64';
+import { Sparkles, X, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 interface OurGallerySectionProps {
   config: WeddingConfig;
@@ -13,23 +12,41 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Ambil daftar foto galeri dari config, atau fallback ke 2 foto prewedding pilihan
   const photos: GalleryPhoto[] = (config.gallery && config.gallery.length > 0)
     ? config.gallery
     : [
         {
-          id: 'gal_1',
-          url: config.bride?.photo || '/uploads/bride_photo.jpg',
-          caption: config.bride?.fullName || config.bride?.name || 'Harinurdian, S.E'
-        },
-        {
-          id: 'gal_2',
-          url: '/couple-photo.jpg',
-          caption: 'Menuju Hari Bahagia'
-        }
-      ];
+              id: 'gal_1',
+      url: '/uploads/1.jpg',
+      caption: ''
+    },
+    {
+      id: 'gal_2',
+      url: '/uploads/2.jpg',
+      caption: ''
+    },
+    {
+      id: 'gal_3',
+      url: '/uploads/3.jpg',
+      caption: ''
+    },
+    {
+      id: 'gal_4',
+      url: '/uploads/4.jpg',
+      caption: 'Menuju Hari Bahagia'
+    },
+    {
+      id: 'gal_5',
+      url: '/uploads/5.jpg',
+      caption: ''
+    },
+    {
+      id: 'gal_6',
+      url: '/uploads/6.jpg',
+      caption: ''
+    }
+  ],
 
-  // Monitor posisi scroll horizontal untuk update titik (dots) aktif
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -92,20 +109,13 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
           <Sparkles className="w-5 h-5 text-[#ef72b4] animate-pulse" />
         </div>
 
-        <p className="font-patrick text-base sm:text-lg text-[#527595] mb-3">
+        <p className="font-patrick text-base sm:text-lg text-[#527595] mb-4">
           Momen Indah & Kenangan Prewedding Kami
         </p>
-
-        {/* Swipe Hint Indicator */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 rounded-full bg-[#eaf4fa] border border-[#5797d0]/25 text-[#5797d0] text-xs font-medium shadow-2xs animate-pulse">
-          <MoveHorizontal className="w-3.5 h-3.5 text-[#ef72b4]" />
-          <span>Geser ke samping untuk melihat foto lainnya ({photos.length} Foto)</span>
-        </div>
       </div>
 
-      {/* Horizontal Carousel Container - 1 Baris Bisa Digeser ke Samping */}
+      {/* Horizontal Carousel Container */}
       <div className="relative w-full overflow-hidden group">
-        {/* Left Arrow Button */}
         {photos.length > 1 && (
           <button
             type="button"
@@ -117,7 +127,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
           </button>
         )}
 
-        {/* Right Arrow Button */}
         {photos.length > 1 && (
           <button
             type="button"
@@ -129,7 +138,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
           </button>
         )}
 
-        {/* The 1-Row Horizontal Scroll Track */}
         <div
           ref={scrollRef}
           onScroll={handleScroll}
@@ -144,7 +152,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
                 onClick={() => setSelectedPhotoIndex(index)}
                 className="gallery-carousel-item shrink-0 w-[220px] sm:w-[250px] snap-center bg-white p-2.5 rounded-2xl shadow-md hover:shadow-xl border border-[#5797d0]/20 transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-1"
               >
-                {/* Image Container with Portrait 3:4 aspect ratio */}
                 <div className="w-full aspect-[3/4] rounded-xl overflow-hidden bg-[#eaf4fa] relative group/img">
                   <img
                     src={photoUrl}
@@ -155,19 +162,15 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
                       const target = e.currentTarget;
                       if (!target.src.includes('couple-photo.jpg')) {
                         target.src = '/couple-photo.jpg';
-                      } else {
-                        target.src = DEFAULT_COVER_PHOTO_BASE64;
                       }
                     }}
                     className="w-full h-full object-cover object-center group-hover/img:scale-108 transition-transform duration-500 ease-out"
                   />
 
-                  {/* Photo index badge */}
                   <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-xs text-white rounded-md text-[10px] font-bold">
                     #{index + 1}
                   </span>
 
-                  {/* Hover Overlay */}
                   <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="w-9 h-9 rounded-full bg-white/90 text-[#5797d0] flex items-center justify-center shadow-md transform scale-75 group-hover/img:scale-100 transition-transform">
                       <Eye className="w-5 h-5" />
@@ -175,7 +178,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
                   </div>
                 </div>
 
-                {/* Caption below photo */}
                 {photo.caption && (
                   <p className="font-patrick text-xs sm:text-sm text-[#5797d0] font-medium mt-2 truncate px-1 text-center">
                     {photo.caption}
@@ -187,7 +189,7 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
         </div>
       </div>
 
-      {/* Navigation Dots & Counter */}
+      {/* Navigation Dots */}
       {photos.length > 1 && (
         <div className="flex flex-col items-center justify-center gap-1.5 mt-3">
           <div className="flex items-center justify-center gap-1.5">
@@ -211,7 +213,7 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
         </div>
       )}
 
-      {/* Lightbox Modal (Tampilan Layar Penuh saat Diklik) */}
+      {/* Lightbox Modal */}
       {selectedPhotoIndex !== null && photos[selectedPhotoIndex] && (
         <div
           role="dialog"
@@ -219,7 +221,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
           onClick={handleCloseModal}
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fade-in"
         >
-          {/* Close Button */}
           <button
             type="button"
             onClick={handleCloseModal}
@@ -229,7 +230,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
             <X className="w-6 h-6" />
           </button>
 
-          {/* Navigation Prev */}
           {photos.length > 1 && (
             <button
               type="button"
@@ -241,7 +241,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
             </button>
           )}
 
-          {/* Image & Caption Container */}
           <div
             onClick={(e) => e.stopPropagation()}
             className="max-w-lg w-full max-h-[85vh] flex flex-col items-center"
@@ -253,7 +252,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
               className="max-w-full max-h-[72vh] object-contain rounded-2xl shadow-2xl border border-white/20"
             />
 
-            {/* Caption & Counter */}
             <div className="mt-3 text-center text-white">
               <p className="font-patrick text-base sm:text-lg font-bold">
                 {photos[selectedPhotoIndex].caption || 'Our Prewedding Gallery'}
@@ -264,7 +262,6 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
             </div>
           </div>
 
-          {/* Navigation Next */}
           {photos.length > 1 && (
             <button
               type="button"
