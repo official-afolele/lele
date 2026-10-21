@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
 import { WeddingConfig } from '../types';
-import { CreditCard, Gift, Copy, Check, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { Gift, Copy, Check, X } from 'lucide-react';
 
 interface WeddingGiftSectionProps {
   config: WeddingConfig;
 }
 
-export const WeddingGiftSection: React.FC<WeddingGiftSectionProps> = ({ config }) => {
-  const [activePanel, setActivePanel] = useState<'rekening' | 'alamat' | null>(null);
+export const WeddingGiftSection: React.FC<WeddingGiftSectionProps> = ({
+  config,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const accounts =
@@ -22,131 +24,176 @@ export const WeddingGiftSection: React.FC<WeddingGiftSectionProps> = ({ config }
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      window.setTimeout(() => setCopiedKey(null), 2500);
+      window.setTimeout(() => setCopiedKey(null), 2000);
     } catch {
-      window.prompt('Salin teks berikut:', text);
+      window.prompt('Silakan salin teks berikut:', text);
     }
   };
 
-  const togglePanel = (panel: 'rekening' | 'alamat') => {
-    setActivePanel((current) => current === panel ? null : panel);
-  };
-
   return (
-    <section id="kado" className="w-full px-4 py-8 text-center scroll-mt-6">
+    <section
+      id="kado"
+      className="w-full px-4 py-12 text-center scroll-mt-6"
+    >
       <div className="max-w-sm sm:max-w-md mx-auto">
-        <h2 className="font-caveat text-4xl sm:text-5xl font-bold text-[#5d99d1] mb-2">
+        <h2 className="font-caveat text-4xl sm:text-5xl font-bold text-[#5d99d1] mb-3">
           Wedding Gift
         </h2>
 
-        <p className="font-patrick text-base sm:text-lg text-[#527595] leading-relaxed mb-6 px-2">
+        <p className="font-patrick text-base sm:text-lg text-[#527595] leading-relaxed mb-8 px-2">
           Doa restu Anda merupakan karunia yang sangat berarti bagi kami.
-          Jika ingin berbagi tanda kasih, Anda dapat memilih cara berikut.
+          Jika ingin berbagi tanda kasih, Anda dapat mengirimkan hadiah
+          melalui tombol di bawah ini.
         </p>
 
-        <div className="space-y-3 text-left">
-          {/* TOMBOL TRANSFER */}
-          <button
-            type="button"
-            onClick={() => togglePanel('rekening')}
-            aria-expanded={activePanel === 'rekening'}
-            className="w-full flex items-center gap-3 rounded-2xl border border-[#5797d0]/25 bg-white p-4 shadow-sm hover:shadow-md transition-all"
-          >
-            <span className="w-11 h-11 rounded-xl bg-[#eaf3fa] flex items-center justify-center text-[#5797d0] shrink-0">
-              <CreditCard className="w-5 h-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block font-bold text-[#2d3748]">Kirim Hadiah via Transfer</span>
-              <span className="block text-xs text-[#527595] mt-1">Lihat nomor rekening mempelai</span>
-            </span>
-            {activePanel === 'rekening'
-              ? <ChevronUp className="w-5 h-5 text-[#5797d0]" />
-              : <ChevronDown className="w-5 h-5 text-[#5797d0]" />}
-          </button>
+        {/* SATU TOMBOL KIRIM GIFT */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3 text-[#3f4865] font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all"
+        >
+          <Gift className="w-5 h-5" />
+          <span>Kirim Gift</span>
+        </button>
+      </div>
 
-          {activePanel === 'rekening' && (
-            <div className="space-y-3 animate-fade-in">
+      {/* MODAL DETAIL GIFT */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="gift-modal-title"
+            className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl bg-white p-5 sm:p-6 text-left shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              aria-label="Tutup detail hadiah"
+              className="absolute right-3 top-3 rounded-full p-2 text-gray-500 hover:bg-gray-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#edf4fb] text-[#5797d0]">
+                <Gift className="w-6 h-6" />
+              </div>
+              <h3
+                id="gift-modal-title"
+                className="font-caveat text-3xl font-bold text-[#5d99d1]"
+              >
+                Wedding Gift
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Terima kasih atas tanda kasih Anda.
+              </p>
+            </div>
+
+            {/* REKENING */}
+            <h4 className="mb-3 font-bold text-gray-700">
+              Hadiah via Transfer
+            </h4>
+
+            <div className="space-y-3">
               {accounts.map((account, index) => (
                 <div
                   key={`${account.accountNumber}-${index}`}
-                  className="rounded-2xl border border-[#5797d0]/20 bg-white p-5 shadow-sm"
+                  className="rounded-xl border border-gray-200 p-4"
                 >
-                  <p className="font-bold text-[#2d3748]">{account.bankName}</p>
-                  <p className="font-mono text-xl sm:text-2xl font-bold tracking-wider text-[#ef72b4] my-2 break-all">
+                  <p className="text-sm font-semibold text-gray-700">
+                    {account.bankName}
+                  </p>
+
+                  <p className="my-2 break-all font-mono text-xl font-bold tracking-wide text-[#5797d0]">
                     {account.accountNumber}
                   </p>
-                  <p className="text-sm text-[#527595]">
-                    a.n. <strong className="text-[#2d3748]">{account.accountHolder}</strong>
+
+                  <p className="text-sm text-gray-600">
+                    a.n. {account.accountHolder}
                   </p>
+
                   <button
                     type="button"
-                    onClick={() => handleCopy(account.accountNumber, `bank-${index}`)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d3748] px-3 py-2 text-xs font-medium text-white hover:bg-[#1a202c] transition-colors"
+                    onClick={() =>
+                      handleCopy(account.accountNumber, `bank-${index}`)
+                    }
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#3f4865] px-3 py-2 text-xs text-white hover:opacity-90"
                   >
-                    {copiedKey === `bank-${index}`
-                      ? <><Check className="w-4 h-4 text-green-300" /> Tersalin!</>
-                      : <><Copy className="w-4 h-4" /> Salin No. Rekening</>}
+                    {copiedKey === `bank-${index}` ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Tersalin
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Salin No. Rekening
+                      </>
+                    )}
                   </button>
                 </div>
               ))}
-              {accounts.length === 0 && (
-                <p className="rounded-xl bg-white p-4 text-sm text-[#527595]">
-                  Informasi rekening belum tersedia.
+            </div>
+
+            {/* ALAMAT PENGIRIMAN */}
+            <div className="mt-6">
+              <h4 className="mb-3 font-bold text-gray-700">
+                Kirim Kado Fisik
+              </h4>
+
+              <div className="rounded-xl border border-gray-200 p-4">
+                <p className="text-sm text-gray-500">Penerima</p>
+                <p className="font-semibold text-gray-800">
+                  {config.giftAddress?.recipient || 'Belum diatur'}
                 </p>
-              )}
-            </div>
-          )}
 
-          {/* TOMBOL ALAMAT KIRIM KADO */}
-          <button
-            type="button"
-            onClick={() => togglePanel('alamat')}
-            aria-expanded={activePanel === 'alamat'}
-            className="w-full flex items-center gap-3 rounded-2xl border border-[#ef72b4]/25 bg-white p-4 shadow-sm hover:shadow-md transition-all"
-          >
-            <span className="w-11 h-11 rounded-xl bg-[#fff0f7] flex items-center justify-center text-[#ef72b4] shrink-0">
-              <Gift className="w-5 h-5" />
-            </span>
-            <span className="flex-1">
-              <span className="block font-bold text-[#2d3748]">Kirim Hadiah ke Alamat</span>
-              <span className="block text-xs text-[#527595] mt-1">Lihat alamat pengiriman kado fisik</span>
-            </span>
-            {activePanel === 'alamat'
-              ? <ChevronUp className="w-5 h-5 text-[#ef72b4]" />
-              : <ChevronDown className="w-5 h-5 text-[#ef72b4]" />}
-          </button>
+                <p className="mt-3 text-sm leading-relaxed text-gray-600">
+                  {config.giftAddress?.fullAddress ||
+                    'Alamat pengiriman belum tersedia.'}
+                </p>
 
-          {activePanel === 'alamat' && (
-            <div className="rounded-2xl border border-[#ef72b4]/20 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3 text-[#ef72b4]">
-                <MapPin className="w-5 h-5 shrink-0" />
-                <h3 className="font-bold text-[#2d3748]">Alamat Pengiriman</h3>
+                {config.giftAddress?.fullAddress && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleCopy(
+                        `Penerima: ${config.giftAddress.recipient}\nAlamat: ${config.giftAddress.fullAddress}`,
+                        'address'
+                      )
+                    }
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#3f4865] px-3 py-2 text-xs text-white hover:opacity-90"
+                  >
+                    {copiedKey === 'address' ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Alamat Tersalin
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Salin Alamat
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
-              <p className="text-sm text-[#527595] mb-1">Penerima:</p>
-              <p className="font-bold text-[#2d3748]">
-                {config.giftAddress?.recipient || 'Penerima belum diatur'}
-              </p>
-              <p className="text-sm leading-relaxed text-[#527595] mt-2">
-                {config.giftAddress?.fullAddress || 'Alamat pengiriman belum tersedia.'}
-              </p>
-              {config.giftAddress?.fullAddress && (
-                <button
-                  type="button"
-                  onClick={() => handleCopy(
-                    `Penerima: ${config.giftAddress.recipient}\nAlamat: ${config.giftAddress.fullAddress}`,
-                    'address'
-                  )}
-                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#2d3748] px-3 py-2 text-xs font-medium text-white hover:bg-[#1a202c] transition-colors"
-                >
-                  {copiedKey === 'address'
-                    ? <><Check className="w-4 h-4 text-green-300" /> Alamat Tersalin!</>
-                    : <><Copy className="w-4 h-4" /> Salin Alamat</>}
-                </button>
-              )}
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="mt-6 w-full rounded-xl bg-[#7b91b8] py-3 font-semibold text-white hover:opacity-90"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 };
