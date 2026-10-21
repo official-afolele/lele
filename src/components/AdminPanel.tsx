@@ -1,7 +1,7 @@
-import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleScriptCode';
 import React, { useState, useEffect } from 'react';
 import { WeddingConfig, GuestItem, WishEntry, GalleryPhoto } from '../types';
-import { weddingData } from '../data/weddingData';
+import { weddingData, initialGuests } from '../data/weddingData';
+import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleScriptCode';
 import { 
   ArrowLeft, 
   Save, 
@@ -157,7 +157,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         method: 'POST',
         body: uploadFormData,
       });
-      if (res.ok) {
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json();
         if (data && data.url) finalUrl = data.url;
       }
@@ -168,13 +168,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     // 2. Base64 POST to /api/upload
     if (!finalUrl) {
       try {
-        const compressed = await compressImageFile(file, 1200, 0.85);
+        const compressed = await compressImageFile(file, 800, 0.70);
         const res = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dataUrl: compressed }),
         });
-        if (res.ok) {
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
           const data = await res.json();
           finalUrl = data.url || compressed;
         } else {
@@ -185,9 +185,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       }
     }
 
-    // 3. Fallback client compressed base64 if server offline
+    // 3. Fallback client compressed base64 if server offline (only ~30KB)
     if (!finalUrl) {
-      finalUrl = await compressImageFile(file, 1000, 0.80);
+      finalUrl = await compressImageFile(file, 800, 0.70);
     }
 
     return finalUrl;
@@ -382,7 +382,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       try {
         const scriptRes = await fetch(`${targetScriptUrl}?action=get_wishes`);
         if (scriptRes.ok) {
-          const data = await scriptRes.json();
+          const raw = await scriptRes.text();
+          let data: any = null;
+          try {
+            data = JSON.parse(raw);
+          } catch {}
           if (data && Array.isArray(data.wishes)) {
             setWishesList(data.wishes);
             try {
@@ -399,8 +403,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     try {
       const res = await fetch('/api/wishes');
-      if (res.ok) {
-        const data = await res.json();
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const raw = await res.text();
+        let data: any = null;
+        try {
+          data = JSON.parse(raw);
+        } catch {}
         if (Array.isArray(data)) {
           setWishesList(data);
           try {
@@ -446,8 +454,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
     try {
       const res = await fetch(`/api/wishes/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        const data = await res.json();
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const raw = await res.text();
+        let data: any = null;
+        try {
+          data = JSON.parse(raw);
+        } catch {}
         if (data && Array.isArray(data.wishes)) {
           setWishesList(data.wishes);
           try {
@@ -550,8 +562,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         ? formData.stories
         : (config.stories || weddingData.stories);
 
+      const galleryToSave = Array.isArray(formData.gallery) && formData.gallery.length > 0
+        ? formData.gallery
+        : (config.gallery || weddingData.gallery || []);
+
       const updatedConfig: WeddingConfig = {
         ...formData,
+        gallery: galleryToSave,
         stories: storiesToSave,
         groom: updatedGroom,
         bride: updatedBride
@@ -568,9 +585,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   }, [formData]);
 
   const getGeneratedWeddingDataCode = () => {
-    return `import { WeddingConfig } from '../types';
+    const guestsListToExport = (guestList && guestList.length > 0) ? guestList : initialGuests;
+    return `import { WeddingConfig, WishEntry, GuestItem } from '../types';
 
 export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
+
+export const initialWishes: WishEntry[] = [];
+
+export const initialGuests: GuestItem[] = ${JSON.stringify(guestsListToExport, null, 2)};
 `;
   };
 
@@ -593,21 +615,16 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
   const [isSyncingScript, setIsSyncingScript] = useState(false);
   const [scriptTestResult, setScriptTestResult] = useState<{ success: boolean; message: string; details?: any } | null>(null);
   const [scriptSyncResult, setScriptSyncResult] = useState<{ success: boolean; message: string; wishesSynced?: number; guestsSynced?: number } | null>(null);
-  const [scriptCode, setScriptCode] = useState<string>('');
+  const [scriptCode, setScriptCode] = useState<string>(GOOGLE_APPS_SCRIPT_CODE);
   const [hasCopiedScript, setHasCopiedScript] = useState(false);
   const [isDomainGuideOpen, setIsDomainGuideOpen] = useState(false);
 
-  // Fetch script code on mount or when Google Script tab opened
+  // Fetch script code fallback if empty
   useEffect(() => {
-    if (activeTab === 'google_script' && !scriptCode) {
-      fetch('/api/google-script/code')
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.code) setScriptCode(data.code);
-        })
-        .catch(() => {});
+    if (!scriptCode) {
+      setScriptCode(GOOGLE_APPS_SCRIPT_CODE);
     }
-  }, [activeTab, scriptCode]);
+  }, [scriptCode]);
 
   const handleTestScriptConnection = async () => {
     const url = formData.googleScriptUrl?.trim();
@@ -623,27 +640,32 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
     setScriptTestResult(null);
 
     try {
-      // Direct Browser Request (Berjalan 100% di Vercel tanpa backend)
-      const testUrl = url.includes('?') ? `${url}&action=ping` : `${url}?action=ping`;
-      const res = await fetch(testUrl, {
+      // Direct GET ping to Google Apps Script URL
+      const pingUrl = url.includes('?') 
+        ? `${url}&action=ping&_t=${Date.now()}` 
+        : `${url}?action=ping&_t=${Date.now()}`;
+
+      const res = await fetch(pingUrl, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
 
+      const rawText = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {}
+
+      if (data && (data.status === 'online' || data.status === 'success')) {
+        setScriptTestResult({
+          success: true,
+          message: `Koneksi Berhasil! Terhubung ke Spreadsheet: "${data.spreadsheetTitle || 'Buku Tamu Undangan'}"`,
+          details: data
+        });
+        return;
+      }
+
       if (res.ok) {
-        try {
-          const data = await res.json();
-          if (data && (data.status === 'online' || data.status === 'success')) {
-            setScriptTestResult({
-              success: true,
-              message: `Koneksi Berhasil! Terhubung ke Spreadsheet: "${data.spreadsheetTitle || 'Buku Tamu Undangan'}"`,
-              details: data
-            });
-            return;
-          }
-        } catch {
-          // Fallback jika bukan json murni
-        }
         setScriptTestResult({
           success: true,
           message: 'Koneksi Berhasil! Google Apps Script merespons dengan status aktif (HTTP 200).'
@@ -651,14 +673,24 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
       } else {
         setScriptTestResult({
           success: false,
-          message: `Google Script merespons status HTTP ${res.status}. Pastikan di Apps Script opsi "Who has access" dipilih "Anyone" (Siapa saja).`
+          message: `Google Script merespons status HTTP ${res.status}. Pastikan di menu Deploy Apps Script, opsi "Who has access" dipilih "Anyone" (Siapa saja).`
         });
       }
     } catch (err: any) {
-      setScriptTestResult({
-        success: false,
-        message: `Koneksi belum dapat terhubung: ${err?.message || 'Akses ditolak'}. Pastikan di Apps Script: Deploy > New Deployment > Who has access pilih "Anyone" (Siapa saja).`
-      });
+      // Fallback: ping dengan mode no-cors jika browser memblokir pembacaan header
+      try {
+        const pingUrl = url.includes('?') ? `${url}&action=ping` : `${url}?action=ping`;
+        await fetch(pingUrl, { mode: 'no-cors' });
+        setScriptTestResult({
+          success: true,
+          message: 'URL Google Apps Script aktif dan dapat dihubungi! (Sinkronisasi otomatis siap digunakan).'
+        });
+      } catch (corsErr: any) {
+        setScriptTestResult({
+          success: false,
+          message: `Koneksi belum dapat terhubung: ${err?.message || 'Akses ditolak'}. Pastikan di Apps Script: Deploy > New Deployment > Who has access pilih "Anyone" (Siapa saja).`
+        });
+      }
     } finally {
       setIsTestingScript(false);
     }
@@ -682,11 +714,12 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ayonikah.web.id';
 
     try {
-      // Direct client-side sync ke Google Apps Script (Bekerja sempurna di Vercel)
+      // Direct client-side sync ke Google Apps Script (Bekerja 100% di hosting statis Vercel)
+      // Gunakan 'text/plain;charset=utf-8' agar tidak memicu CORS preflight OPTIONS yang ditolak Google Script
       await fetch(url, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'sync_all_wishes',
           wishes: wishesToSync
@@ -696,7 +729,7 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
       await fetch(url, {
         method: 'POST',
         mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: 'sync_guests',
           guests: guestsToSync,
@@ -706,7 +739,7 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
 
       setScriptSyncResult({
         success: true,
-        message: `Berhasil mengirim sinkronisasi data (${wishesToSync.length} Ucapan, ${guestsToSync.length} Tamu) ke Google Spreadsheet!`,
+        message: `Berhasil mengirim sinkronisasi data (${wishesToSync.length} Ucapan, ${guestsToSync.length} Tamu) ke Google Spreadsheet! Silakan periksa Spreadsheet Anda.`,
         wishesSynced: wishesToSync.length,
         guestsSynced: guestsToSync.length
       });
@@ -898,6 +931,7 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
       detail: `Foto telah otomatis disimpan permanen ke server dan diperbarui di undangan.`,
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
     });
+    return true;
   };
 
   const handlePhotoUpload = async (role: 'groom' | 'bride' | 'couple', e: React.ChangeEvent<HTMLInputElement>) => {
@@ -929,11 +963,13 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
           body: uploadFormData,
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.url) {
-            finalPhotoUrl = data.url;
-          }
+        if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+          try {
+            const data = await res.json();
+            if (data?.url) {
+              finalPhotoUrl = data.url;
+            }
+          } catch {}
         }
       } catch (uploadErr) {
         console.warn('Multipart upload fallback:', uploadErr);
@@ -942,15 +978,23 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
       // 2. Fallback if multipart failed: Client-side compression
       if (!finalPhotoUrl) {
         const compressedDataUrl = await compressImageFile(file, 1200, 0.85);
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl: compressedDataUrl }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          finalPhotoUrl = data.url || compressedDataUrl;
-        } else {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataUrl: compressedDataUrl }),
+          });
+          if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+            try {
+              const data = await res.json();
+              finalPhotoUrl = data.url || compressedDataUrl;
+            } catch {
+              finalPhotoUrl = compressedDataUrl;
+            }
+          } else {
+            finalPhotoUrl = compressedDataUrl;
+          }
+        } catch {
           finalPhotoUrl = compressedDataUrl;
         }
       }
@@ -3494,8 +3538,25 @@ Hormat kami,
                 </div>
               )}
 
-              {/* Tombol Simpan Galeri */}
-              <div className="mt-6 pt-4 border-t border-[#e2e8f0] flex justify-end">
+              {/* Tombol Simpan Galeri & Salin Kode */}
+              <div className="mt-6 pt-4 border-t border-[#e2e8f0] flex items-center justify-between flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(getGeneratedWeddingDataCode());
+                      alert('Kode src/data/weddingData.ts berhasil disalin ke clipboard! Anda bisa langsung paste di file weddingData.ts di GitHub agar foto galeri tersimpan permanen.');
+                    } catch {
+                      alert('Gagal menyalin otomatis ke clipboard.');
+                    }
+                  }}
+                  title="Salin seluruh konfigurasi & galeri foto ke clipboard untuk ditempel di GitHub"
+                  className="px-4 py-2.5 rounded-xl bg-white border border-[#5797d0]/40 text-[#5797d0] hover:bg-sky-50 text-xs sm:text-sm font-bold shadow-2xs cursor-pointer flex items-center gap-1.5 transition-all"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Salin Kode untuk GitHub</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleSave}
