@@ -1,6 +1,6 @@
-import { initialWishes } from '../data/weddingData';
 import React, { useState, useEffect, useRef } from 'react';
 import { WishEntry } from '../types';
+import { normalizeWishList } from '../utils/wishNormalizer';
 import { 
   Heart, 
   Send, 
@@ -15,6 +15,10 @@ import {
 interface WishesRsvpSectionProps {
   initialGuestName?: string;
   googleScriptUrl?: string;
+  config?: {
+    wishesTitle?: string;
+    wishesSubtitle?: string;
+  };
 }
 
 const STORAGE_KEY = 'wedding_wishes_jaka_dian';
@@ -22,7 +26,8 @@ const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby6h1lOSpTyc
 
 export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({ 
   initialGuestName = '',
-  googleScriptUrl
+  googleScriptUrl,
+  config
 }) => {
   const activeScriptUrl = (googleScriptUrl && googleScriptUrl.startsWith('http')) 
     ? googleScriptUrl 
@@ -34,13 +39,13 @@ export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return normalizeWishList(parsed);
         }
       }
     } catch {
       // fallback
     }
-    return initialWishes;
+    return [];
   });
 
   const [name, setName] = useState(() => {
@@ -67,11 +72,17 @@ export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({
       try {
         const res = await fetch(`${activeScriptUrl}?action=get_wishes`);
         if (res.ok) {
-          const data = await res.json();
+          const rawText = await res.text();
+          let data: any = null;
+          try {
+            data = JSON.parse(rawText);
+          } catch {}
+
           if (data && Array.isArray(data.wishes) && data.wishes.length > 0) {
-            setWishes(data.wishes);
+            const normalized = normalizeWishList(data.wishes);
+            setWishes(normalized);
             try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(data.wishes));
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
             } catch {}
             if (showSpinner) setIsRefreshing(false);
             return;
@@ -85,12 +96,18 @@ export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({
     // 2. Fallback to local server if running locally
     try {
       const res = await fetch('/api/wishes');
-      if (res.ok) {
-        const serverWishes: WishEntry[] = await res.json();
+      if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
+        const rawText = await res.text();
+        let serverWishes: any = null;
+        try {
+          serverWishes = JSON.parse(rawText);
+        } catch {}
+
         if (Array.isArray(serverWishes) && serverWishes.length > 0) {
-          setWishes(serverWishes);
+          const normalized = normalizeWishList(serverWishes);
+          setWishes(normalized);
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(serverWishes));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
           } catch {}
           return;
         }
@@ -107,7 +124,7 @@ export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setWishes(parsed);
+          setWishes(normalizeWishList(parsed));
         }
       }
     } catch {}
@@ -216,25 +233,27 @@ export const WishesRsvpSection: React.FC<WishesRsvpSectionProps> = ({
     }, 6000);
   };
 
-  const filteredWishes = wishes.filter((w) => {
+  const safeWishesList = (Array.isArray(wishes) ? wishes : []).filter((w): w is WishEntry => Boolean(w && typeof w === 'object' && w.name));
+
+  const filteredWishes = safeWishesList.filter((w) => {
     if (filter === 'hadir') return w.attendance === 'hadir';
     if (filter === 'ragu') return w.attendance === 'ragu';
     if (filter === 'tidak') return w.attendance === 'tidak';
     return true;
   });
 
-  const totalHadir = wishes.filter((w) => w.attendance === 'hadir').length;
-  const totalRagu = wishes.filter((w) => w.attendance === 'ragu').length;
-  const totalTidak = wishes.filter((w) => w.attendance === 'tidak').length;
+  const totalHadir = safeWishesList.filter((w) => w.attendance === 'hadir').length;
+  const totalRagu = safeWishesList.filter((w) => w.attendance === 'ragu').length;
+  const totalTidak = safeWishesList.filter((w) => w.attendance === 'tidak').length;
 
   return (
     <section id="ucapan" ref={wishesSectionRef} className="w-full px-4 py-8 text-center scroll-mt-6">
       <div className="max-w-sm sm:max-w-md mx-auto">
         <h2 className="font-caveat text-4xl sm:text-5xl font-bold text-[#5d99d1] mb-2">
-          Love Your Wishes!
+          {config?.wishesTitle || 'Love Your Wishes!'}
         </h2>
         <p className="font-patrick text-base text-[#527595] mb-6">
-          Berikan doa restu dan konfirmasi kehadiran Anda untuk mempelai.
+          {config?.wishesSubtitle || 'Berikan doa restu dan konfirmasi kehadiran Anda untuk mempelai.'}
         </p>
 
         {/* FORM CARD (KONSEP GAMBAR PERTAMA) */}
