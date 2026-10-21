@@ -1,4 +1,5 @@
 import { WeddingConfig, WishEntry, GuestItem } from '../types';
+
 export const weddingData: WeddingConfig = {
   groom: {
     name: 'Jaka',
@@ -99,6 +100,12 @@ export const weddingData: WeddingConfig = {
       accountNumber: '7265469374',
       accountHolder: 'Harinurdian'
     },
+    {
+      bankName: 'BANK BSI SYARIAH',
+      accountNumber: '7238491028',
+      accountHolder: 'JAKA'
+    }
+  ],
   giftAddress: {
     recipient: 'Dian',
     fullAddress: 'Jl. Pashanda Bhakti RT 004 RW 002, Dusun Pangkalan Betung, Desa Pipitteja, Kec. Teluk Keramat, Kab. Sambas'
@@ -115,5 +122,4 @@ export const initialWishes: WishEntry[] = [];
 export const initialGuests: GuestItem[] = [
   { id: '2', name: 'Rahmat Hidayat', category: 'Teman', note: 'Sahabat kampus' },
   { id: '3', name: 'Keluarga Besar Hatta', category: 'Keluarga', note: 'Keluarga mempelai wanita' },
- 
 ];
