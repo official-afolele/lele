@@ -16,6 +16,7 @@ import { FloatingControls } from './components/FloatingControls';
 import { AdminPanel } from './components/AdminPanel';
 import { AdminLogin } from './components/AdminLogin';
 import { PhotoEditorModal, PhotoRole } from './components/PhotoEditorModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { normalizeImageUrl } from './utils/imageUrl';
 import {
   DEFAULT_ADMIN_PASSWORD,
@@ -162,6 +163,21 @@ export default function App() {
         if (!parsed.gallery || !Array.isArray(parsed.gallery) || parsed.gallery.length === 0) {
           parsed.gallery = weddingData.gallery;
         }
+        if (!parsed.giftAddress || !parsed.giftAddress.recipient) {
+          parsed.giftAddress = weddingData.giftAddress;
+        }
+        if (!parsed.akad || !parsed.akad.venueName) {
+          parsed.akad = weddingData.akad;
+        }
+        if (!parsed.resepsi || !parsed.resepsi.venueName) {
+          parsed.resepsi = weddingData.resepsi;
+        }
+        if (!parsed.groom || !parsed.groom.name) {
+          parsed.groom = weddingData.groom;
+        }
+        if (!parsed.bride || !parsed.bride.name) {
+          parsed.bride = weddingData.bride;
+        }
         return parsed;
       }
     } catch {
@@ -194,9 +210,9 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
 
-    // 1. Fetch persistent config from server
+    // 1. Fetch persistent config from server (check application/json so Vercel SPA rewrite doesn't error)
     fetch('/api/config')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok && res.headers.get('content-type')?.includes('application/json') ? res.json() : null))
       .then((serverConfig: WeddingConfig | null) => {
         if (!isMounted || !serverConfig) return;
         const normalized: WeddingConfig = {
@@ -231,7 +247,7 @@ export default function App() {
 
     // 2. Fetch persistent guests from server
     fetch('/api/guests')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok && res.headers.get('content-type')?.includes('application/json') ? res.json() : null))
       .then((serverGuests: GuestItem[] | null) => {
         if (!isMounted || !serverGuests || !Array.isArray(serverGuests)) return;
         setGuests(serverGuests);
@@ -339,7 +355,7 @@ export default function App() {
         },
       };
     }
-    await handleSaveConfig(updatedConfig);
+    return await handleSaveConfig(updatedConfig);
   };
 
   const navigateToAdmin = () => {
@@ -400,20 +416,8 @@ export default function App() {
     // 1. Instant local storage cache
     try {
       localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(sanitized));
-    } catch {
-      // If quota exceeded due to large base64 photos, strip heavy base64 for local storage cache
-      try {
-        const lightweight = {
-          ...sanitized,
-          gallery: sanitized.gallery?.map((g) => ({
-            ...g,
-            url: g.url && g.url.length > 1000 ? '/couple-cover.jpg' : g.url
-          }))
-        };
-        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(lightweight));
-      } catch {
-        // storage fallback
-      }
+    } catch (storageErr) {
+      console.warn('LocalStorage quota warning:', storageErr);
     }
 
     // 2. Persist to server so ALL browsers & devices immediately see updated photos and details
@@ -559,45 +563,48 @@ export default function App() {
               />
             ) : (
               /* MAIN INVITATION CONTENT */
-              <main className="w-full flex flex-col items-center pt-2">
-                {/* Title, Quote & Music Player */}
-                <Page2TitleQuote config={config} />
+              <ErrorBoundary fallbackTitle="Undangan Pernikahan Dian & Jaka">
+                <main className="w-full flex flex-col items-center pt-2">
+                  {/* Title, Quote & Music Player */}
+                  <Page2TitleQuote config={config} />
 
-                {/* Bride & Groom Section (Bersih untuk tamu - fitur edit foto hanya ada di Admin) */}
-                <BrideGroomSection 
-                  config={config} 
-                />
+                  {/* Bride & Groom Section (Bersih untuk tamu - fitur edit foto hanya ada di Admin) */}
+                  <BrideGroomSection 
+                    config={config} 
+                  />
 
-                {/* Save The Date & Countdown */}
-                <SaveTheDateSection config={config} />
+                  {/* Save The Date & Countdown */}
+                  <SaveTheDateSection config={config} />
 
-                {/* Event Details: Akad & Resepsi */}
-                <EventDetailsSection config={config} />
+                  {/* Event Details: Akad & Resepsi */}
+                  <EventDetailsSection config={config} />
 
-                {/* Our Gallery (Prewedding Photo Gallery) */}
-                <OurGallerySection config={config} />
+                  {/* Our Gallery (Prewedding Photo Gallery) */}
+                  <OurGallerySection config={config} />
 
-                {/* Love Story */}
-                <LoveStorySection config={config} />
+                  {/* Love Story */}
+                  <LoveStorySection config={config} />
 
-                {/* Wedding Gift & Kirim Kado */}
-                <WeddingGiftSection config={config} />
+                  {/* Wedding Gift & Kirim Kado */}
+                  <WeddingGiftSection config={config} />
 
-                {/* Wishes & RSVP Form */}
-                <WishesRsvpSection 
-                  initialGuestName={guestName} 
-                  googleScriptUrl={config.googleScriptUrl}
-                />
+                  {/* Wishes & RSVP Form */}
+                  <WishesRsvpSection 
+                    initialGuestName={guestName} 
+                    googleScriptUrl={config.googleScriptUrl}
+                    config={config}
+                  />
 
-                {/* Footer (clean for guests, secret 5-click easter egg navigates to admin) */}
-                <FooterSection 
-                  config={config} 
-                  onOpenAdmin={navigateToAdmin}
-                />
+                  {/* Footer (clean for guests, secret 5-click easter egg navigates to admin) */}
+                  <FooterSection 
+                    config={config} 
+                    onOpenAdmin={navigateToAdmin}
+                  />
 
-                {/* Floating Music & Mobile Navigation */}
-                <FloatingControls />
-              </main>
+                  {/* Floating Music & Mobile Navigation */}
+                  <FloatingControls />
+                </main>
+              </ErrorBoundary>
             )}
           </div>
         </div>
