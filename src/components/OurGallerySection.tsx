@@ -21,33 +21,23 @@ export const OurGallerySection: React.FC<OurGallerySectionProps> = ({ config }) 
     : [
         {
           id: 'gal_1',
-          url: url: '/uploads/1.jpg',
-          caption: ''
+          url: config.bride?.photo || '/uploads/bride_photo.jpg',
+          caption: config.bride?.fullName || config.bride?.name || 'Harinurdian, S.E'
         },
         {
           id: 'gal_2',
-          url: '/uploads/2.jpg',
-          caption: ''
+          url: config.groom?.photo || '/uploads/groom_photo.jpg',
+          caption: config.groom?.fullName || config.groom?.name || 'Jaka, S.Kom'
         },
         {
           id: 'gal_3',
-          url: '/uploads/3.jpg',
-          caption: ''
+          url: config.couplePhoto || '/couple-cover.jpg',
+          caption: 'Dian & Jaka'
         },
         {
           id: 'gal_4',
-          url: '/uploads/4.jpg',
-          caption: ''
-        },
-        {
-          id: 'gal_5',
-          url: '/uploads/5.jpg',
-          caption: ''
-        },
-        {
-          id: 'gal_6',
-          url: '/uploads/6.jpg',
-          caption: ''
+          url: '/couple-photo.jpg',
+          caption: 'Menuju Hari Bahagia'
         }
       ];
 
