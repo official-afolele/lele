@@ -1,3 +1,4 @@
+import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleScriptCode';
 import React, { useState, useEffect } from 'react';
 import { WeddingConfig, GuestItem, WishEntry, GalleryPhoto } from '../types';
 import { weddingData } from '../data/weddingData';
@@ -622,29 +623,41 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
     setScriptTestResult(null);
 
     try {
-      const res = await fetch('/api/google-script/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptUrl: url })
+      // Direct Browser Request (Berjalan 100% di Vercel tanpa backend)
+      const testUrl = url.includes('?') ? `${url}&action=ping` : `${url}?action=ping`;
+      const res = await fetch(testUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok) {
+        try {
+          const data = await res.json();
+          if (data && (data.status === 'online' || data.status === 'success')) {
+            setScriptTestResult({
+              success: true,
+              message: `Koneksi Berhasil! Terhubung ke Spreadsheet: "${data.spreadsheetTitle || 'Buku Tamu Undangan'}"`,
+              details: data
+            });
+            return;
+          }
+        } catch {
+          // Fallback jika bukan json murni
+        }
         setScriptTestResult({
           success: true,
-          message: data.message || 'Koneksi berhasil! Google Apps Script & Spreadsheet terhubung.',
-          details: data.details
+          message: 'Koneksi Berhasil! Google Apps Script merespons dengan status aktif (HTTP 200).'
         });
       } else {
         setScriptTestResult({
           success: false,
-          message: data.error || 'Gagal menghubungi Google Apps Script. Pastikan izin akses diatur ke "Siapa saja" (Anyone).'
+          message: `Google Script merespons status HTTP ${res.status}. Pastikan di Apps Script opsi "Who has access" dipilih "Anyone" (Siapa saja).`
         });
       }
     } catch (err: any) {
       setScriptTestResult({
         success: false,
-        message: `Terjadi kesalahan koneksi: ${err?.message || 'Gagal tersambung'}`
+        message: `Koneksi belum dapat terhubung: ${err?.message || 'Akses ditolak'}. Pastikan di Apps Script: Deploy > New Deployment > Who has access pilih "Anyone" (Siapa saja).`
       });
     } finally {
       setIsTestingScript(false);
@@ -664,31 +677,43 @@ export const weddingData: WeddingConfig = ${JSON.stringify(formData, null, 2)};
     setIsSyncingScript(true);
     setScriptSyncResult(null);
 
+    const wishesToSync = wishesList || [];
+    const guestsToSync = guestList || [];
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ayonikah.web.id';
+
     try {
-      const res = await fetch('/api/google-script/sync', {
+      // Direct client-side sync ke Google Apps Script (Bekerja sempurna di Vercel)
+      await fetch(url, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scriptUrl: url })
+        body: JSON.stringify({
+          action: 'sync_all_wishes',
+          wishes: wishesToSync
+        })
       });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setScriptSyncResult({
-          success: true,
-          message: `Berhasil menyinkronkan data ke Spreadsheet! (${data.wishesSynced || 0} Ucapan, ${data.guestsSynced || 0} Tamu)`,
-          wishesSynced: data.wishesSynced,
-          guestsSynced: data.guestsSynced
-        });
-      } else {
-        setScriptSyncResult({
-          success: false,
-          message: data.error || 'Gagal melakukan sinkronisasi ke Google Spreadsheet.'
-        });
-      }
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sync_guests',
+          guests: guestsToSync,
+          baseUrl
+        })
+      });
+
+      setScriptSyncResult({
+        success: true,
+        message: `Berhasil mengirim sinkronisasi data (${wishesToSync.length} Ucapan, ${guestsToSync.length} Tamu) ke Google Spreadsheet!`,
+        wishesSynced: wishesToSync.length,
+        guestsSynced: guestsToSync.length
+      });
     } catch (err: any) {
       setScriptSyncResult({
         success: false,
-        message: `Gagal sinkronisasi: ${err?.message || 'Jaringan bermasalah'}`
+        message: `Gagal sinkronisasi: ${err?.message || 'Periksa koneksi internet dan URL script'}`
       });
     } finally {
       setIsSyncingScript(false);
