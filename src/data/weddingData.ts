@@ -63,7 +63,7 @@ export const weddingData: WeddingConfig = {
     isoDate: '2026-12-26',
     timeStr: 'Pukul 08.00 WIB - Selesai',
     venueName: 'Kediaman Mempelai Wanita',
-    address: 'Jalan Pashanda Bhakti, RT 005 RW 002, Dusun Pangkalan Betung, Desa Pipit Teja, Kec. Teluk Keramat',
+    address: 'Jalan Pashanda Bhakti, RT 004 RW 002, Dusun Pangkalan Betung, Desa Pipit Teja, Kec. Teluk Keramat',
     mapsUrl: 'https://maps.app.goo.gl/PJBKEHqAw4uwG5Ms8'
   },
   resepsi: {
@@ -72,7 +72,7 @@ export const weddingData: WeddingConfig = {
     isoDate: '2026-12-27',
     timeStr: 'Pukul 14.00 - 19.00 WIB',
     venueName: 'Kediaman Mempelai Wanita',
-    address: 'Jalan Pashanda Bhakti, RT 005 RW 002, Dusun Pangkalan Betung, Desa Pipit Teja, Kec. Teluk Keramat',
+    address: 'Jalan Pashanda Bhakti, RT 004 RW 002, Dusun Pangkalan Betung, Desa Pipit Teja, Kec. Teluk Keramat',
     mapsUrl: 'https://maps.app.goo.gl/PJBKEHqAw4uwG5Ms8'
   },
   stories: [
@@ -108,7 +108,7 @@ export const weddingData: WeddingConfig = {
   ],
   giftAddress: {
     recipient: 'Dian',
-    fullAddress: 'Jl. Pashanda Bhakti RT 005 RW 002, Dusun Pangkalan Betung, Desa Pipitteja, Kec. Teluk Keramat, Kab. Sambas'
+    fullAddress: 'Jl. Pashanda Bhakti RT 004 RW 002, Dusun Pangkalan Betung, Desa Pipitteja, Kec. Teluk Keramat, Kab. Sambas'
   },
   musicTitle: 'Cinta Terakhir (Cover)',
   musicArtist: 'Ari Lasso / Cover',
