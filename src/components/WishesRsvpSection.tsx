@@ -1,3 +1,4 @@
+import { initialWishes } from '../data/weddingData';
 import React, { useState, useEffect, useRef } from 'react';
 import { WishEntry } from '../types';
 import { 
