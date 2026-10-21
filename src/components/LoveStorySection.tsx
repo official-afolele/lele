@@ -215,17 +215,25 @@ export const LoveStorySection: React.FC<LoveStorySectionProps> = ({ config }) =>
     <section id="cerita" className="w-full px-4 py-8 text-center scroll-mt-6">
       <div className="max-w-sm sm:max-w-md mx-auto">
         {/* Title Love Story diapit Love Biru (Kiri) dan Love Pink (Kanan) */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-8">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
           {/* Love Biru di sebelah kiri */}
           <ScribbleHeart color="blue" />
 
           <h2 className="font-caveat text-4xl sm:text-5xl font-bold text-[#5d99d1]">
-            Love Story
+            {config.storiesTitle || 'Love Story'}
           </h2>
 
           {/* Love Pink di sebelah kanan */}
           <ScribbleHeart color="pink" />
         </div>
+
+        {config.storiesSubtitle ? (
+          <p className="font-patrick text-base text-[#527595] mb-6">
+            {config.storiesSubtitle}
+          </p>
+        ) : (
+          <div className="mb-6" />
+        )}
 
         {/* Timeline Container */}
         <div className="relative border-l-2 border-dashed border-[#ef76b8] ml-4 sm:ml-6 pl-6 sm:pl-8 text-left space-y-8 my-4">
