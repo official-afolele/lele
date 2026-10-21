@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WeddingConfig, GuestItem, WishEntry, GalleryPhoto } from '../types';
 import { weddingData, initialGuests } from '../data/weddingData';
 import { GOOGLE_APPS_SCRIPT_CODE } from '../data/googleScriptCode';
+import { normalizeWishList } from '../utils/wishNormalizer';
 import { 
   ArrowLeft, 
   Save, 
@@ -388,9 +389,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             data = JSON.parse(raw);
           } catch {}
           if (data && Array.isArray(data.wishes)) {
-            setWishesList(data.wishes);
+            const normalized = normalizeWishList(data.wishes);
+            setWishesList(normalized);
             try {
-              localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(data.wishes));
+              localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(normalized));
             } catch {}
             setIsLoadingWishes(false);
             return;
@@ -410,9 +412,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           data = JSON.parse(raw);
         } catch {}
         if (Array.isArray(data)) {
-          setWishesList(data);
+          const normalized = normalizeWishList(data);
+          setWishesList(normalized);
           try {
-            localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(normalized));
           } catch {}
           return;
         }
@@ -429,7 +432,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setWishesList(parsed);
+          setWishesList(normalizeWishList(parsed));
           return;
         }
       }
@@ -452,6 +455,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       window.dispatchEvent(new Event('storage'));
     } catch {}
 
+    // Sync directly to Google Apps Script so the 10s poller does not restore it
+    const scriptUrl = formData.googleScriptUrl?.trim();
+    if (scriptUrl && scriptUrl.startsWith('http')) {
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'sync_all_wishes',
+          wishes: updated
+        })
+      }).catch(() => {});
+    }
+
     try {
       const res = await fetch(`/api/wishes/${id}`, { method: 'DELETE' });
       if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
@@ -461,9 +478,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
           data = JSON.parse(raw);
         } catch {}
         if (data && Array.isArray(data.wishes)) {
-          setWishesList(data.wishes);
+          const normalized = normalizeWishList(data.wishes);
+          setWishesList(normalized);
           try {
-            localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(data.wishes));
+            localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify(normalized));
           } catch {}
         }
       }
@@ -479,6 +497,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       localStorage.setItem(WISHES_STORAGE_KEY, JSON.stringify([]));
       window.dispatchEvent(new Event('storage'));
     } catch {}
+
+    const scriptUrl = formData.googleScriptUrl?.trim();
+    if (scriptUrl && scriptUrl.startsWith('http')) {
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'sync_all_wishes',
+          wishes: []
+        })
+      }).catch(() => {});
+    }
+
     try {
       await fetch('/api/wishes/all', { method: 'DELETE' });
     } catch {}
@@ -498,10 +530,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       window.dispatchEvent(new Event('storage'));
     } catch {}
 
+    const scriptUrl = formData.googleScriptUrl?.trim();
+    if (scriptUrl && scriptUrl.startsWith('http')) {
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'sync_all_wishes',
+          wishes: updated
+        })
+      }).catch(() => {});
+    }
+
     setEditingWish(null);
     setSaveToast({
-      title: 'Ucapan Berhasil Diperbarui!',
-      detail: `Ucapan dari "${editingWish.name}" telah berhasil diperbarui dan disimpan.`,
+      title: 'Ucapan Berhasil Diperbarui & Disinkronkan! ✨',
+      detail: `Ucapan dari "${editingWish.name}" telah berhasil diperbarui dan disinkronkan ke Google Spreadsheet.`,
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
     });
   };
@@ -1140,11 +1185,25 @@ export const initialGuests: GuestItem[] = ${JSON.stringify(guestsListToExport, n
       bride: updatedBride
     };
 
+    isInternalUpdate.current = true;
     try {
       await Promise.all([
         onSaveConfig(updatedConfig),
         onSaveGuests(guestList)
       ]);
+
+      const scriptUrl = formData.googleScriptUrl?.trim();
+      if (scriptUrl && scriptUrl.startsWith('http')) {
+        fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'save_config',
+            config: updatedConfig
+          })
+        }).catch(() => {});
+      }
     } catch (err) {
       console.warn('Save error encountered:', err);
     }
@@ -3102,6 +3161,34 @@ Hormat kami,
                 </div>
               </div>
 
+              {/* Pengaturan Judul & Subjudul Love Story */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 p-3.5 bg-[#f8fbfe] rounded-xl border border-[#d3e5f4]">
+                <div>
+                  <label className="block text-xs font-bold text-[#527595] mb-1">
+                    Judul Bagian Cerita:
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.storiesTitle ?? 'Love Story'}
+                    onChange={(e) => setFormData({ ...formData, storiesTitle: e.target.value })}
+                    placeholder="Love Story"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#527595] mb-1">
+                    Subjudul / Kalimat Pengantar (Opsional):
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.storiesSubtitle ?? ''}
+                    onChange={(e) => setFormData({ ...formData, storiesSubtitle: e.target.value })}
+                    placeholder="Kisah manis perjalanan cinta kami..."
+                    className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-4">
                 {(Array.isArray(formData.stories) && formData.stories.length > 0
                   ? formData.stories
@@ -4260,6 +4347,70 @@ Hormat kami,
                     {wishesList.filter((w) => w.attendance === 'tidak').length}
                   </div>
                   <div className="text-xs font-semibold text-rose-600 mt-0.5">Tidak Hadir</div>
+              </div>
+
+              {/* Pengaturan Judul & Subjudul Love Your Wishes! */}
+              <div className="mb-5 p-4 rounded-xl bg-[#f0f7fc] border border-[#d3e5f4]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <span className="text-xs font-bold text-[#2b6cb0] flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#ef72b4]" />
+                    <span>Pengaturan Judul & Subjudul Bagian Ucapan (Love Your Wishes!)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className={`self-start sm:self-auto px-3 py-1.5 rounded-lg text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all ${
+                      justSaved 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-300' 
+                        : 'bg-[#5797d0] hover:bg-[#4784ba]'
+                    }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Menyimpan...</span>
+                      </>
+                    ) : justSaved ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                        <span>Tersimpan!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Simpan Teks Ucapan</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#527595] mb-1">
+                      Judul Bagian Ucapan:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.wishesTitle ?? 'Love Your Wishes!'}
+                      onChange={(e) => setFormData({ ...formData, wishesTitle: e.target.value })}
+                      placeholder="Love Your Wishes!"
+                      className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#527595] mb-1">
+                      Subjudul / Kalimat Pengantar:
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.wishesSubtitle ?? 'Berikan doa restu dan konfirmasi kehadiran Anda untuk mempelai.'}
+                      onChange={(e) => setFormData({ ...formData, wishesSubtitle: e.target.value })}
+                      placeholder="Berikan doa restu dan konfirmasi kehadiran Anda untuk mempelai."
+                      className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
