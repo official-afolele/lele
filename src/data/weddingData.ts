@@ -102,7 +102,7 @@ export const weddingData: WeddingConfig = {
     },
     {
       bankName: 'BANK BSI SYARIAH',
-      accountNumber: '7238491028',
+      accountNumber: '7169792148',
       accountHolder: 'JAKA'
     }
   ],
@@ -120,8 +120,7 @@ export const weddingData: WeddingConfig = {
 export const initialWishes: WishEntry[] = [];
 
 export const initialGuests: GuestItem[] = [
-  { id: '1', name: 'Bapak Andi & Keluarga', category: 'VIP', note: 'Kerabat dekat' },
   { id: '2', name: 'Rahmat Hidayat', category: 'Teman', note: 'Sahabat kampus' },
   { id: '3', name: 'Keluarga Besar Hatta', category: 'Keluarga', note: 'Keluarga mempelai wanita' },
-  { id: '4', name: 'Rekan Kerja Dinas', category: 'Kantor', note: 'Teman kantor' },
+ 
 ];
