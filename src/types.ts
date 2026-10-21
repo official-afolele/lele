@@ -69,6 +69,10 @@ export interface WeddingConfig {
   akad: EventInfo;
   resepsi: EventInfo;
   stories: StoryMilestone[];
+  storiesTitle?: string;
+  storiesSubtitle?: string;
+  wishesTitle?: string;
+  wishesSubtitle?: string;
   bank: BankAccount;
   bankAccounts?: BankAccount[];
   giftAddress: GiftAddress;
