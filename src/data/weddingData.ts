@@ -100,11 +100,6 @@ export const weddingData: WeddingConfig = {
       accountNumber: '7265469374',
       accountHolder: 'Harinurdian'
     },
-    {
-      bankName: 'BANK BSI SYARIAH',
-      accountNumber: '7238491028',
-      accountHolder: 'JAKA'
-    }
   ],
   giftAddress: {
     recipient: 'Dian',
