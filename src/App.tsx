@@ -154,7 +154,7 @@ export default function App() {
             parsed.bride.photo = normalizeImageUrl(parsed.bride.photo);
           }
         }
-        if (!parsed.bankAccounts || !Array.isArray(parsed.bankAccounts)) {
+        if (!parsed.bankAccounts || parsed.bankAccounts.length < 2) {
           parsed.bankAccounts = weddingData.bankAccounts;
         }
         if (!parsed.stories || !Array.isArray(parsed.stories) || parsed.stories.length === 0) {
@@ -225,9 +225,6 @@ export default function App() {
           stories: Array.isArray(serverConfig.stories) && serverConfig.stories.length > 0
             ? serverConfig.stories
             : weddingData.stories,
-          bankAccounts: Array.isArray(serverConfig.bankAccounts)
-            ? serverConfig.bankAccounts
-            : (Array.isArray(config.bankAccounts) ? config.bankAccounts : weddingData.bankAccounts),
           groom: {
             ...serverConfig.groom,
             photo: normalizeImageUrl(serverConfig.groom?.photo || weddingData.groom.photo),
@@ -263,52 +260,6 @@ export default function App() {
       .catch((err) => {
         console.warn('Guests fetch from server failed:', err);
       });
-
-    // 3. Fetch persistent config from Google Apps Script (Keeps Love Story & details synced on every device)
-    const scriptUrl = config.googleScriptUrl || weddingData.googleScriptUrl;
-    if (scriptUrl && scriptUrl.startsWith('http')) {
-      fetch(`${scriptUrl}?action=get_config`)
-        .then((res) => res.text())
-        .then((raw) => {
-          if (!isMounted) return;
-          try {
-            const data = JSON.parse(raw);
-            if (data && data.config && typeof data.config === 'object') {
-              const remoteCfg = data.config;
-              setConfig((prev) => {
-                const merged: WeddingConfig = {
-                  ...prev,
-                  ...remoteCfg,
-                  stories: (Array.isArray(remoteCfg.stories) && remoteCfg.stories.length > 0)
-                    ? remoteCfg.stories
-                    : prev.stories,
-                  gallery: (Array.isArray(remoteCfg.gallery) && remoteCfg.gallery.length > 0)
-                    ? remoteCfg.gallery
-                    : prev.gallery,
-                  bankAccounts: Array.isArray(remoteCfg.bankAccounts)
-                    ? remoteCfg.bankAccounts
-                    : prev.bankAccounts,
-                  groom: {
-                    ...prev.groom,
-                    ...(remoteCfg.groom || {}),
-                    photo: normalizeImageUrl(remoteCfg.groom?.photo) || prev.groom.photo,
-                  },
-                  bride: {
-                    ...prev.bride,
-                    ...(remoteCfg.bride || {}),
-                    photo: normalizeImageUrl(remoteCfg.bride?.photo) || prev.bride.photo,
-                  },
-                };
-                try {
-                  localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(merged));
-                } catch {}
-                return merged;
-              });
-            }
-          } catch {}
-        })
-        .catch(() => {});
-    }
 
     return () => {
       isMounted = false;
@@ -447,9 +398,6 @@ export default function App() {
       stories: Array.isArray(newConfig.stories) && newConfig.stories.length > 0
         ? newConfig.stories
         : weddingData.stories,
-      bankAccounts: Array.isArray(newConfig.bankAccounts)
-        ? newConfig.bankAccounts
-        : (Array.isArray(config.bankAccounts) ? config.bankAccounts : weddingData.bankAccounts),
       groom: {
         ...newConfig.groom,
         photo: normalizeImageUrl(newConfig.groom?.photo) || weddingData.groom.photo,
@@ -472,30 +420,18 @@ export default function App() {
       console.warn('LocalStorage quota warning:', storageErr);
     }
 
-    // 2. Persist to server if backend is active
+    // 2. Persist to server so ALL browsers & devices immediately see updated photos and details
     try {
-      fetch('/api/config', {
+      const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sanitized),
-      }).catch(() => {});
-    } catch {}
-
-    // 3. Persist to Google Apps Script Web App so Love Story & details are synced across all devices without Node server
-    const targetScriptUrl = sanitized.googleScriptUrl || config.googleScriptUrl || weddingData.googleScriptUrl;
-    if (targetScriptUrl && targetScriptUrl.startsWith('http')) {
-      fetch(targetScriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'save_config',
-          config: sanitized
-        })
-      }).catch(() => {});
+      });
+      return res.ok;
+    } catch (err) {
+      console.warn('Could not persist config to server:', err);
+      return false;
     }
-
-    return true;
   };
 
   const handleUpdateCoverPhoto = async (newUrl: string) => {
