@@ -3676,160 +3676,215 @@ Hormat kami,
           </div>
         )}
 
-        {/* TAB 4: HADIAH & REKENING */}
-        {activeTab === 'kado' && (
-          <div className="space-y-5">
-            {/* Rekening Bank (Amplop Digital) */}
-            <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-[#e5ebf0]">
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-[#5797d0] flex items-center gap-2">
-                    <span>💳 Amplop Digital (Nomor Rekening Bank)</span>
-                  </h2>
-                  <p className="text-xs text-[#527595] mt-0.5">
-                    Daftar rekening bank / e-wallet yang ditampilkan kepada para tamu undangan
-                  </p>
-                </div>
+       
+{/* TAB 4: HADIAH & REKENING */}
+{activeTab === 'kado' && (
+  <div className="space-y-5">
+    {/* Rekening Bank (Amplop Digital) */}
+    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-[#e5ebf0]">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-[#5797d0] flex items-center gap-2">
+            <span>💳 Amplop Digital (Nomor Rekening Bank)</span>
+          </h2>
+          <p className="text-xs text-[#527595] mt-0.5">
+            Daftar rekening bank / e-wallet yang ditampilkan kepada para tamu undangan
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            const currentAccounts = Array.isArray(formData.bankAccounts)
+              ? [...formData.bankAccounts]
+              : formData.bank
+                ? [{ ...formData.bank }]
+                : [];
+
+            const newAccounts = [
+              ...currentAccounts,
+              {
+                bankName: 'BANK BSI SYARIAH',
+                accountNumber: '',
+                accountHolder: 'JAKA'
+              }
+            ];
+
+            setFormData({
+              ...formData,
+              bankAccounts: newAccounts
+            });
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5797d0] hover:bg-[#4383bd] text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Tambah Rekening Baru</span>
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {(Array.isArray(formData.bankAccounts)
+          ? formData.bankAccounts
+          : formData.bank
+            ? [{ ...formData.bank }]
+            : []
+        ).map((account, index) => {
+          const isJaka = String(account.accountHolder ?? '')
+            .toLowerCase()
+            .includes('jaka');
+
+          return (
+            <div
+              key={index}
+              className="p-4 rounded-xl border border-[#d9e8f5] bg-[#f8fbfe] relative"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-white border border-[#d9e8f5] text-[#2c5282]">
+                  Rekening #{index + 1}{' '}
+                  {isJaka
+                    ? '• Mempelai Pria (Jaka)'
+                    : '• Mempelai Wanita (Dian)'}
+                </span>
 
                 <button
                   type="button"
                   onClick={() => {
-                    const currentAccounts = formData.bankAccounts && formData.bankAccounts.length > 0
+                    const current = Array.isArray(formData.bankAccounts)
                       ? [...formData.bankAccounts]
-                      : [{ ...formData.bank }];
-                    const newAccounts = [
-                      ...currentAccounts,
-                      {
-                        bankName: 'BANK BSI SYARIAH',
-                        accountNumber: '',
-                        accountHolder: 'JAKA'
-                      }
-                    ];
+                      : formData.bank
+                        ? [{ ...formData.bank }]
+                        : [];
+
+                    const updated = current.filter((_, i) => i !== index);
+                    const emptyBank = {
+                      bankName: '',
+                      accountNumber: '',
+                      accountHolder: ''
+                    };
+
                     setFormData({
                       ...formData,
-                      bankAccounts: newAccounts
+                      bank: updated[0] || emptyBank,
+                      bankAccounts: updated
                     });
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#5797d0] hover:bg-[#4383bd] text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-semibold p-1 hover:bg-red-50 rounded cursor-pointer"
+                  title="Hapus Rekening Ini"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Rekening Baru</span>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus</span>
                 </button>
               </div>
 
-              {/* Render List of Bank Accounts */}
-              <div className="space-y-4">
-                {(formData.bankAccounts && formData.bankAccounts.length > 0
-                  ? formData.bankAccounts
-                  : [{ ...formData.bank }]
-                ).map((account, index) => {
-                  const isJaka = account.accountHolder.toLowerCase().includes('jaka');
-                  return (
-                    <div 
-                      key={index}
-                      className="p-4 rounded-xl border border-[#d9e8f5] bg-[#f8fbfe] relative"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-white border border-[#d9e8f5] text-[#2c5282]">
-                          Rekening #{index + 1} {isJaka ? '• Mempelai Pria (Jaka)' : '• Mempelai Wanita (Dian)'}
-                        </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#527595] mb-1">
+                    Nama Bank:
+                  </label>
+                  <input
+                    type="text"
+                    value={account.bankName ?? ''}
+                    onChange={(e) => {
+                      const current = Array.isArray(formData.bankAccounts)
+                        ? [...formData.bankAccounts]
+                        : formData.bank
+                          ? [{ ...formData.bank }]
+                          : [];
 
-                        {(formData.bankAccounts ? formData.bankAccounts.length : 1) > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const current = formData.bankAccounts || [{ ...formData.bank }];
-                              const updated = current.filter((_, i) => i !== index);
-                              setFormData({
-                                ...formData,
-                                bank: updated[0] || formData.bank,
-                                bankAccounts: updated
-                              });
-                            }}
-                            className="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-semibold p-1 hover:bg-red-50 rounded cursor-pointer"
-                            title="Hapus Rekening Ini"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Hapus</span>
-                          </button>
-                        )}
-                      </div>
+                      current[index] = {
+                        ...current[index],
+                        bankName: e.target.value
+                      };
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-[#527595] mb-1">
-                            Nama Bank:
-                          </label>
-                          <input
-                            type="text"
-                            value={account.bankName}
-                            onChange={(e) => {
-                              const current = formData.bankAccounts && formData.bankAccounts.length > 0
-                                ? [...formData.bankAccounts]
-                                : [{ ...formData.bank }];
-                              current[index] = { ...current[index], bankName: e.target.value };
-                              setFormData({
-                                ...formData,
-                                bank: index === 0 ? current[0] : formData.bank,
-                                bankAccounts: current
-                              });
-                            }}
-                            placeholder="BANK BSI SYARIAH"
-                            className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
-                          />
-                        </div>
+                      setFormData({
+                        ...formData,
+                        bank: index === 0 ? current[0] : formData.bank,
+                        bankAccounts: current
+                      });
+                    }}
+                    placeholder="BANK BSI SYARIAH"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                  />
+                </div>
 
-                        <div>
-                          <label className="block text-xs font-bold text-[#527595] mb-1">
-                            Nomor Rekening:
-                          </label>
-                          <input
-                            type="text"
-                            value={account.accountNumber}
-                            onChange={(e) => {
-                              const current = formData.bankAccounts && formData.bankAccounts.length > 0
-                                ? [...formData.bankAccounts]
-                                : [{ ...formData.bank }];
-                              current[index] = { ...current[index], accountNumber: e.target.value };
-                              setFormData({
-                                ...formData,
-                                bank: index === 0 ? current[0] : formData.bank,
-                                bankAccounts: current
-                              });
-                            }}
-                            placeholder="Contoh: 7238491028"
-                            className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white font-mono"
-                          />
-                        </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#527595] mb-1">
+                    Nomor Rekening:
+                  </label>
+                  <input
+                    type="text"
+                    value={account.accountNumber ?? ''}
+                    onChange={(e) => {
+                      const current = Array.isArray(formData.bankAccounts)
+                        ? [...formData.bankAccounts]
+                        : formData.bank
+                          ? [{ ...formData.bank }]
+                          : [];
 
-                        <div>
-                          <label className="block text-xs font-bold text-[#527595] mb-1">
-                            Atas Nama Rekening:
-                          </label>
-                          <input
-                            type="text"
-                            value={account.accountHolder}
-                            onChange={(e) => {
-                              const current = formData.bankAccounts && formData.bankAccounts.length > 0
-                                ? [...formData.bankAccounts]
-                                : [{ ...formData.bank }];
-                              current[index] = { ...current[index], accountHolder: e.target.value };
-                              setFormData({
-                                ...formData,
-                                bank: index === 0 ? current[0] : formData.bank,
-                                bankAccounts: current
-                              });
-                            }}
-                            placeholder="JAKA"
-                            className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      current[index] = {
+                        ...current[index],
+                        accountNumber: e.target.value
+                      };
+
+                      setFormData({
+                        ...formData,
+                        bank: index === 0 ? current[0] : formData.bank,
+                        bankAccounts: current
+                      });
+                    }}
+                    placeholder="Contoh: 7238491028"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#527595] mb-1">
+                    Atas Nama Rekening:
+                  </label>
+                  <input
+                    type="text"
+                    value={account.accountHolder ?? ''}
+                    onChange={(e) => {
+                      const current = Array.isArray(formData.bankAccounts)
+                        ? [...formData.bankAccounts]
+                        : formData.bank
+                          ? [{ ...formData.bank }]
+                          : [];
+
+                      current[index] = {
+                        ...current[index],
+                        accountHolder: e.target.value
+                      };
+
+                      setFormData({
+                        ...formData,
+                        bank: index === 0 ? current[0] : formData.bank,
+                        bankAccounts: current
+                      });
+                    }}
+                    placeholder="JAKA"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d9e0e5] focus:border-[#5797d0] outline-none text-sm bg-white"
+                  />
+                </div>
               </div>
             </div>
+          );
+        })}
+
+        {Array.isArray(formData.bankAccounts) &&
+          formData.bankAccounts.length === 0 && (
+            <div className="rounded-xl border border-dashed border-[#c7d8e8] p-5 text-center text-sm text-[#527595]">
+              Belum ada rekening. Klik{' '}
+              <strong>Tambah Rekening Baru</strong> untuk menambahkan rekening.
+            </div>
+          )}
+      </div>
+    </div>
+
+    {/* Pertahankan bagian Alamat Pengiriman Kado Fisik dan fitur lain
+        dari file AdminPanel.tsx yang sudah ada. */}
+  </div>
+)}
 
             {/* Kirim Kado Fisik */}
             <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-xs border border-[#e5ebf0]">
