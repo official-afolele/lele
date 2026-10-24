@@ -119,12 +119,11 @@ export interface Guest {
   status?: string;
 }
 
-export const initialGuests: Guest[] = [
+export const initialGuests = [
   {
-    id: '1',
-    name: 'Tamu Undangan',
-    slug: 'tamu-undangan',
-    category: 'Reguler',
-    status: 'Belum Konfirmasi'
+    id: "1",
+    name: "Tamu Undangan",
+    code: "tamu",
+    status: "pending"
   }
 ];
