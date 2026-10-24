@@ -111,4 +111,20 @@ export const weddingData: WeddingConfig = {
   "googleScriptUrl": "https://script.google.com/macros/s/AKfycby6h1lOSpTyczUj5Bsyu3n0W3AnlZuME1Cn4V2WFfpNQeGj6v_3poNiZScPbButlpVf/exec",
   "customDomain": "https://ayonikah.web.id"
 };
-export const initialGuests = [];
+export interface Guest {
+  id: string;
+  name: string;
+  slug?: string;
+  category?: string;
+  status?: string;
+}
+
+export const initialGuests: Guest[] = [
+  {
+    id: '1',
+    name: 'Tamu Undangan',
+    slug: 'tamu-undangan',
+    category: 'Reguler',
+    status: 'Belum Konfirmasi'
+  }
+];
