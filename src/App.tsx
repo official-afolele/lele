@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { weddingData, initialGuests } from './data/weddingData';
+import { weddingData, } from './data/weddingData';
 import { WeddingConfig, GuestItem } from './types';
 import { audioController } from './utils/audioPlayer';
 import { CoverSection } from './components/CoverSection';
