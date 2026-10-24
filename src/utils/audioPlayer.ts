@@ -205,5 +205,5 @@ class WeddingAudioController {
 
 // Initial audio instance with user's requested song
 export const audioController = new WeddingAudioController(
-  'https://wedding-invitations-chi.vercel.app/audio/cinta_terakhir_cover1.mp3'
+  'https://dennycaknan-sinarangen.vercel.app/'
 );
